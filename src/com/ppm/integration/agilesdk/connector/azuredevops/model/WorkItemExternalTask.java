@@ -17,10 +17,7 @@ import com.ppm.integration.agilesdk.pm.WorkPlanIntegrationContext;
 import com.ppm.integration.agilesdk.provider.UserProvider;
 import org.apache.commons.lang.StringUtils;
 
-import java.text.SimpleDateFormat;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -195,8 +192,6 @@ public class WorkItemExternalTask extends ExternalTask {
             return ppmResourceIds;
         }
 
-
-
         if (fieldValue.isJsonArray()) {
             for (JsonElement val : fieldValue.getAsJsonArray()) {
                 Long userId = getResourceIdFromEmailOrUsernameOrFullName(getUserIdentifierFromElement(val), getFullNameFromElement(val), userProvider, projectId);
@@ -259,7 +254,19 @@ public class WorkItemExternalTask extends ExternalTask {
         }
 
         if (user == null && !StringUtils.isBlank(fullName)) {
-            user = userProvider.getByFullName(fullName.trim(), projectId, false);
+            // This code is complicated and use reflection because we want it to work on older versions of PPM where
+            // UserProvider doesn't have the #getByFullName" method, which was introduced in PPM 2023.3
+            try {
+                Method m = UserProvider.class.getMethod("getByFullName", String.class, Long.class, boolean.class);
+                if (m != null) {
+                    user = (User) m.invoke(userProvider, fullName.trim(), projectId, false);
+                }
+            } catch (Exception e) {
+                // We do nothing, the method doesn't exist
+            }
+
+            // Above reflection code will just call this on PPM 2023.3+:
+            // user = userProvider.getByFullName(fullName.trim(), projectId, false);
         }
         if (user == null) {
             return null;

@@ -106,6 +106,10 @@ public class WorkItemExternalTask extends ExternalTask {
             startDate = adjustStartDateTime(parseDateStr(iteration.getAttributes().getStartDate()));
         }
 
+        if (startDate == null) {
+            startDate = adjustStartDateTime(getDefaultStartDate());
+        }
+
         return startDate;
     }
 
@@ -116,6 +120,10 @@ public class WorkItemExternalTask extends ExternalTask {
 
         if (finishDate == null && iteration != null) {
             finishDate = adjustStartDateTime(parseDateStr(iteration.getAttributes().getFinishDate()));
+        }
+
+        if (finishDate == null) {
+            finishDate = adjustStartDateTime(getDefaultFinishDate());
         }
 
         return finishDate;
@@ -311,6 +319,26 @@ public class WorkItemExternalTask extends ExternalTask {
     public Iteration getIteration() {
         return iteration;
     }
+
+    private Date getDefaultStartDate() {
+        Calendar todayMorning = new GregorianCalendar();
+        todayMorning.set(Calendar.HOUR, 1);
+        todayMorning.set(Calendar.MINUTE, 0);
+        todayMorning.set(Calendar.SECOND, 0);
+        todayMorning.set(Calendar.MILLISECOND, 0);
+        return todayMorning.getTime();
+
+    }
+
+    private Date getDefaultFinishDate() {
+        Calendar todayEvening = new GregorianCalendar();
+        todayEvening.set(Calendar.HOUR, 23);
+        todayEvening.set(Calendar.MINUTE, 0);
+        todayEvening.set(Calendar.SECOND, 0);
+        todayEvening.set(Calendar.MILLISECOND, 0);
+        return todayEvening.getTime();
+    }
+
 }
 
 

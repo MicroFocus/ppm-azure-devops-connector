@@ -20,18 +20,26 @@ public class AzureDevopsConstants {
 
     public static final String APIS_URL = "/_apis/";
 
+    public static final String API_CONNECTION_DATA_URL = APIS_URL + "ConnectionData";
+
     public static final String VERSION_7_VERSION_SUFFIX = "?api-version=7.0";
     public static final String VERSION_51_VERSION_SUFFIX = "?api-version=5.1";
 
     public static final String API_PROJECTS_URL = APIS_URL + "projects" + VERSION_7_VERSION_SUFFIX;
 
-    public static final String API_WORK_ITEMS_URL = APIS_URL + "wit/workitems" + VERSION_7_VERSION_SUFFIX;
+    public static final String API_WORK_ITEMS_END_POINT = APIS_URL + "wit/workitems" ;
 
-    public static final String API_WORK_ITEM_TYPES_URL = APIS_URL + "wit/workitemtypes" + VERSION_7_VERSION_SUFFIX;
+    public static final String API_WORK_ITEMS_URL = API_WORK_ITEMS_END_POINT + VERSION_7_VERSION_SUFFIX;
+
+    public static final String API_WORK_ITEM_TYPES_ENDPOINT = APIS_URL + "wit/workitemtypes";
+
+    public static final String API_WORK_ITEM_TYPES_URL = API_WORK_ITEM_TYPES_ENDPOINT + VERSION_7_VERSION_SUFFIX;
+
+    public static final String API_FIELDS_URL = APIS_URL + "wit/fields"+ VERSION_7_VERSION_SUFFIX;
 
     public static final String API_ITERATIONS_URL = APIS_URL + "work/teamsettings/iterations" + VERSION_7_VERSION_SUFFIX;
 
-    public static final String API_WIQL_SUFFIX_URL = APIS_URL + "/wit/wiql" + VERSION_51_VERSION_SUFFIX;
+    public static final String API_WIQL_SUFFIX_URL = APIS_URL + "wit/wiql" + VERSION_51_VERSION_SUFFIX;
 
     public static final String WP_WORK_ITEM_TYPE_PREFIX = "WP_WIT_";
 

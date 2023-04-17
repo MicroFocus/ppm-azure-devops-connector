@@ -34,7 +34,7 @@ public class WorkItemExternalTask extends ExternalTask {
     private ValueSet config;
     private UserProvider userProvider;
     private Double effort = 0.0d;
-    private List<Long> resourcesIds = new ArrayList<>();
+    private List<User> resources = new ArrayList<>();
 
     private List<ExternalTask> children = new ArrayList<>();
 
@@ -45,13 +45,13 @@ public class WorkItemExternalTask extends ExternalTask {
 
     private boolean isWorkLeafTask = false;
 
-    public WorkItemExternalTask(WorkItem workItem, ValueSet config, UserProvider userProvider, WorkPlanIntegrationContext context, AzureDevopsService service) {
+    public WorkItemExternalTask(WorkItem workItem, ValueSet config, WorkPlanIntegrationContext context, AzureDevopsService service) {
         this.workItem = workItem;
         this.config = config;
-        this.userProvider = userProvider;
-        this.resourcesIds = getResourceField("System.AssignedTo", getProjectIdFromContext(context));
-        this.effort = getNumberField("Microsoft.VSTS.Scheduling.Effort");
-        this.iteration = service.getIteration(getStringField("System.IterationPath"));
+        this.userProvider = service.getUserProvider();
+        this.resources = this.workItem.getResourceField("System.AssignedTo", getProjectIdFromContext(context), userProvider);
+        this.effort = this.workItem.getNumberField("Microsoft.VSTS.Scheduling.Effort");
+        this.iteration = service.getIteration(this.workItem.getStringField("System.IterationPath"));
     }
 
     public String getIterationPath() {
@@ -95,12 +95,12 @@ public class WorkItemExternalTask extends ExternalTask {
 
     @Override
     public String getName() {
-        return (isWorkLeafTask ? "[Work] " : "[" + getStringField("System.WorkItemType") + "]") + getStringField("System.Title");
+        return (isWorkLeafTask ? "[Work] " : "[" + this.workItem.getStringField("System.WorkItemType") + "]") + this.workItem.getStringField("System.Title");
     }
 
     @Override
     public Date getScheduledStart() {
-        Date startDate = adjustStartDateTime(getDateField("Microsoft.VSTS.Scheduling.StartDate"));
+        Date startDate = adjustStartDateTime(this.workItem.getDateField("Microsoft.VSTS.Scheduling.StartDate"));
 
         if (startDate == null && iteration != null) {
             startDate = adjustStartDateTime(parseDateStr(iteration.getAttributes().getStartDate()));
@@ -116,7 +116,7 @@ public class WorkItemExternalTask extends ExternalTask {
 
     @Override
     public Date getScheduledFinish() {
-        Date finishDate = adjustStartDateTime(getDateField("Microsoft.VSTS.Scheduling.TargetDate"));
+        Date finishDate = adjustStartDateTime(this.workItem.getDateField("Microsoft.VSTS.Scheduling.TargetDate"));
 
         if (finishDate == null && iteration != null) {
             finishDate = adjustStartDateTime(parseDateStr(iteration.getAttributes().getFinishDate()));
@@ -136,16 +136,16 @@ public class WorkItemExternalTask extends ExternalTask {
 
         double effortValue = effort == null ? 0d: effort;
 
-        final double numResources = resourcesIds.size();
+        final double numResources = resources.size();
 
-        if (resourcesIds.isEmpty()) {
+        if (resources.isEmpty()) {
             // All is unassigned effort
             ExternalTaskActuals unassignedActuals = new AzureDevopsExternalTaskActuals(effortValue, getStatus(), getScheduledStart(), getScheduledFinish(), null);
             actuals.add(unassignedActuals);
         } else {
             // One Actual entry per resource.
-            for (final Long resourceId : resourcesIds) {
-                ExternalTaskActuals resourceActuals = new AzureDevopsExternalTaskActuals(effortValue / numResources, getStatus(), getScheduledStart(), getScheduledFinish(), resourceId);
+            for (final User resource : resources) {
+                ExternalTaskActuals resourceActuals = new AzureDevopsExternalTaskActuals(effortValue / numResources, getStatus(), getScheduledStart(), getScheduledFinish(), resource.getUserId());
                 actuals.add(resourceActuals);
             }
         }
@@ -153,135 +153,7 @@ public class WorkItemExternalTask extends ExternalTask {
         return actuals;
     }
 
-    private String getStringField(String fieldName) {
-        JsonElement fieldValue = workItem.getFields().get(fieldName);
 
-        if (fieldValue == null || !fieldValue.isJsonPrimitive()) {
-            return null;
-        }
-
-        return fieldValue.getAsString();
-    }
-
-    private Double getNumberField(String fieldName) {
-        JsonElement fieldValue = workItem.getFields().get(fieldName);
-
-        if (fieldValue == null || !fieldValue.isJsonPrimitive()) {
-            return null;
-        }
-
-        return fieldValue.getAsDouble();
-    }
-
-    private Date getDateField(String fieldName) {
-        String dateStr = getStringField(fieldName);
-
-        if (StringUtils.isBlank(dateStr)) {
-            return null;
-        }
-
-        return parseDateStr(dateStr);
-    }
-
-
-
-    /**
-     * @return The list of the PPM User IDs based on the content of the emails or people for that property.
-     *
-     *
-     */
-    public List<Long> getResourceField(String fieldName, Long projectId) {
-
-        List<Long> ppmResourceIds = new ArrayList<>();
-
-        JsonElement fieldValue = workItem.getFields().get(fieldName);
-
-        if (fieldValue == null) {
-            return ppmResourceIds;
-        }
-
-        if (fieldValue.isJsonArray()) {
-            for (JsonElement val : fieldValue.getAsJsonArray()) {
-                Long userId = getResourceIdFromEmailOrUsernameOrFullName(getUserIdentifierFromElement(val), getFullNameFromElement(val), userProvider, projectId);
-                if (userId != null && !ppmResourceIds.contains(userId)) {
-                    ppmResourceIds.add(userId);
-                }
-            }
-        } else {
-            Long userId = getResourceIdFromEmailOrUsernameOrFullName(getUserIdentifierFromElement(fieldValue), getFullNameFromElement(fieldValue), userProvider, projectId);
-            if (userId != null) {
-                ppmResourceIds.add(userId);
-            }
-        }
-
-        return ppmResourceIds;
-    }
-
-    private String getFullNameFromElement(JsonElement fieldValue) {
-        if (fieldValue.isJsonPrimitive()) {
-            return fieldValue.getAsString();
-        }
-
-        if (fieldValue.isJsonObject()) {
-            JsonObject field = fieldValue.getAsJsonObject();
-            if (field.has("displayName") && field.get("displayName").isJsonPrimitive()) {
-                return field.get("displayName").getAsString();
-            }
-        }
-
-        return null;
-    }
-
-    private String getUserIdentifierFromElement(JsonElement fieldValue) {
-        if (fieldValue.isJsonPrimitive()) {
-            return fieldValue.getAsString();
-        }
-
-        if (fieldValue.isJsonObject()) {
-            JsonObject field = fieldValue.getAsJsonObject();
-            if (field.has("uniqueName") && field.get("uniqueName").isJsonPrimitive()) {
-                return field.get("uniqueName").getAsString();
-            }
-            if (field.has("name") && field.get("name").isJsonPrimitive()) {
-                return field.get("name").getAsString();
-            }
-        }
-
-        return null;
-    }
-
-    private Long getResourceIdFromEmailOrUsernameOrFullName(String emailOrUsername, String fullName, UserProvider userProvider, Long projectId) {
-        User user = null;
-
-        if (!StringUtils.isBlank(emailOrUsername)) {
-            user = userProvider.getByEmail(emailOrUsername.trim());
-
-            if (user == null) {
-                user = userProvider.getByUsername(emailOrUsername.trim());
-            }
-        }
-
-        if (user == null && !StringUtils.isBlank(fullName)) {
-            // This code is complicated and use reflection because we want it to work on older versions of PPM where
-            // UserProvider doesn't have the #getByFullName" method, which was introduced in PPM 2023.3
-            try {
-                Method m = UserProvider.class.getMethod("getByFullName", String.class, Long.class, boolean.class);
-                if (m != null) {
-                    user = (User) m.invoke(userProvider, fullName.trim(), projectId, false);
-                }
-            } catch (Exception e) {
-                // We do nothing, the method doesn't exist
-            }
-
-            // Above reflection code will just call this on PPM 2023.3+:
-            // user = userProvider.getByFullName(fullName.trim(), projectId, false);
-        }
-        if (user == null) {
-            return null;
-        } else {
-            return user.getUserId();
-        }
-    }
 
     public void addChild(ExternalTask child) {
         children.add(child);
@@ -308,7 +180,7 @@ public class WorkItemExternalTask extends ExternalTask {
     }
 
     public String getAzureDevopsStatus() {
-        String status = getStringField("System.State");
+        String status = this.workItem.getStringField("System.State");
         if (status == null) {
             status = "New";
         }

@@ -9,7 +9,6 @@ public abstract class AzureDevopsObject {
     public String name;
     public String url;
     public String id;
-    public String lastUpdateTime;
 
     public String getName() {
         return name;
@@ -34,15 +33,6 @@ public abstract class AzureDevopsObject {
     public void setId(String id) {
         this.id = id;
     }
-
-    public String getLastUpdateTime() {
-        return lastUpdateTime;
-    }
-
-    public void setLastUpdateTime(String lastUpdateTime) {
-        this.lastUpdateTime = lastUpdateTime;
-    }
-
 
 }
 

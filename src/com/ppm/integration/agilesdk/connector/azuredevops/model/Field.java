@@ -11,6 +11,9 @@ public class Field extends AzureDevopsObject {
 
     private String referenceName;
 
+    private String type;
+
+    private String[] allowedValues;
 
     public String getHelpText() {
         return helpText;
@@ -34,5 +37,21 @@ public class Field extends AzureDevopsObject {
 
     public void setReferenceName(String referenceName) {
         this.referenceName = referenceName;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String[] getAllowedValues() {
+        return allowedValues;
+    }
+
+    public void setAllowedValues(String[] allowedValues) {
+        this.allowedValues = allowedValues;
     }
 }

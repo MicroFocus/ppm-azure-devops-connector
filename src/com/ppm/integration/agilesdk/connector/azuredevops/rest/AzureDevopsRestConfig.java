@@ -6,34 +6,30 @@
 package com.ppm.integration.agilesdk.connector.azuredevops.rest;
 
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.wink.client.ClientConfig;
 
 import java.nio.charset.Charset;
 import java.util.Base64;
 
 public class AzureDevopsRestConfig {
-    private ClientConfig clientConfig;
 
     private String authToken;
 
     private String organizationUrl;
 
-    public ClientConfig getClientConfig() {
-        return clientConfig;
-    }
 
-    public AzureDevopsRestConfig() {
-        clientConfig = new ClientConfig();
-    }
+    private String proxyHost;
+    private String proxyPort;
 
 
-    public ClientConfig setProxy(String proxyHost, String proxyPort) {
+    public AzureDevopsRestConfig setProxy(String proxyHost, String proxyPort) {
 
         if (proxyHost != null && !proxyHost.isEmpty() && proxyPort != null && !proxyPort.isEmpty()) {
-            clientConfig.proxyHost(proxyHost);
-            clientConfig.proxyPort(Integer.parseInt(proxyPort));
+            this.proxyHost = proxyHost;
+            this.proxyPort = proxyPort;
         }
-        return clientConfig;
+        return this;
     }
 
 
@@ -58,4 +54,16 @@ public class AzureDevopsRestConfig {
         // Username is irrelevant for PAT authentication
         return "Basic " + Base64.getEncoder().encodeToString((":"+getAuthToken()).getBytes());
     }
+
+    public String getProxyHost() {
+        return proxyHost;
+    }
+
+    public int getProxyPort() {
+        if (StringUtils.isBlank(proxyPort) || !StringUtils.isNumeric(proxyPort)) {
+            return 8080;
+        }
+        return Integer.parseInt(proxyPort);
+    }
+
 }

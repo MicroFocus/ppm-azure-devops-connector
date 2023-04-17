@@ -41,6 +41,11 @@ public class AzureDevOpsUtils {
     }
 
     public static Date parseDateStr(String dateStr) {
+
+        if (dateStr == null || "null".equalsIgnoreCase(dateStr)) {
+            return null;
+        }
+
         try {
             if (dateStr.contains("T")) {
                 ZonedDateTime date = ZonedDateTime.parse(dateStr, longDateTimeFormatter);

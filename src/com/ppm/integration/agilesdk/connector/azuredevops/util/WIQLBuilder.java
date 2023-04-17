@@ -2,10 +2,10 @@ package com.ppm.integration.agilesdk.connector.azuredevops.util;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /** This class helps building a WIQL (Work Item query language.
@@ -15,6 +15,9 @@ import java.util.stream.Collectors;
  * */
 public class WIQLBuilder {
 
+
+    private static final DateTimeFormatter ISO_8601_DATE_FORMATTER = DateTimeFormatter.ISO_INSTANT;
+
     private Set<String> columns = new HashSet<>();
 
     private Set<String> workItemTypes = new HashSet<>();
@@ -22,6 +25,10 @@ public class WIQLBuilder {
     private Set<String> excludedStatuses = new HashSet<>();
 
     private boolean crossProjectsSearch = false;
+
+    private Date modifiedSinceDate = null;
+    private Collection<String> workItemIds = null;
+    private Date createdSinceDate = null;
 
     /**
      * Default implementation - only returns Work Items IDs.
@@ -85,6 +92,25 @@ public class WIQLBuilder {
             sb.append(") ");
         }
 
+        if (modifiedSinceDate != null) {
+            needAnd = addWhereAnd(needAnd, sb);
+            sb.append( " [System.ChangedDate] >= '" + ISO_8601_DATE_FORMATTER.format(modifiedSinceDate.toInstant()) + "' ");
+        }
+
+        if (createdSinceDate != null) {
+            needAnd = addWhereAnd(needAnd, sb);
+            sb.append( " [System.CreatedDate] >= '" + ISO_8601_DATE_FORMATTER.format(createdSinceDate.toInstant()) + "' ");
+        }
+
+        if (workItemIds != null && !workItemIds.isEmpty()) {
+
+            needAnd = addWhereAnd(needAnd, sb);
+
+            sb.append(" [System.Id] IN (");
+            sb.append(StringUtils.join(workItemIds, ","));
+            sb.append(") ");
+        }
+
         // No sorting criteria for now.
 
         return sb.toString();
@@ -97,5 +123,24 @@ public class WIQLBuilder {
             sb.append(" WHERE ");
         }
         return true;
+    }
+
+    public WIQLBuilder filterByModifiedAfter(Date modifiedSinceDate) {
+        this.modifiedSinceDate = modifiedSinceDate;
+        return this;
+    }
+
+    public WIQLBuilder filterByIds(Collection<String> workItemIds) {
+        this.workItemIds = workItemIds;
+        return this;
+    }
+
+    public WIQLBuilder filterByCreatedAfter(Date createdSinceDate) {
+        this.createdSinceDate = createdSinceDate;
+        return this;
+    }
+
+    public boolean needsTime() {
+        return createdSinceDate != null || modifiedSinceDate != null;
     }
 }

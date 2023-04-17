@@ -35,7 +35,7 @@ public class AzureDevopsIntegrationConnector extends IntegrationConnector {
 
     @Override
     public String getConnectorVersion() {
-        return "0.1";
+        return "0.2";
     }
 
     @Override
@@ -84,7 +84,12 @@ public class AzureDevopsIntegrationConnector extends IntegrationConnector {
 
     @Override
     public List<String> getIntegrationClasses() {
-        return Arrays.asList(new String[]{"com.ppm.integration.agilesdk.connector.azuredevops.AzureDevopsWorkPlanIntegration"});
+        return Arrays.asList(new String[]{"com.ppm.integration.agilesdk.connector.azuredevops.AzureDevopsWorkPlanIntegration", "com.ppm.integration.agilesdk.connector.azuredevops.AzureDevopsRequestIntegration"});
+    }
+
+    @Override
+    public String testConnection(ValueSet instanceConfigurationParameters) {
+        return AzureDevopsServiceProvider.get(instanceConfigurationParameters).testConnection();
     }
 
 }

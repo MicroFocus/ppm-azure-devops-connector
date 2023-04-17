@@ -155,14 +155,14 @@ public class AzureDevopsWorkPlanIntegration extends WorkPlanIntegration {
         }
 
         final AzureDevopsService runService = getService(values);
-        final UserProvider userProvider = AzureDevopsServiceProvider.getUserProvider();
+        final UserProvider userProvider = service.getUserProvider();
 
         final List<WorkItem> workItems = runService.getProjectWorkItems(projectId, workItemTypes, statusesToIgnore.toArray(new String[statusesToIgnore.size()]));
 
         // We first create all External Tasks, but without any structure (children) info.
         Map<String, WorkItemExternalTask> externalTasksByWorkItemIds = new LinkedHashMap<>(workItems.size());
         for (WorkItem wi : workItems) {
-            WorkItemExternalTask externalTask = new WorkItemExternalTask(wi, values, userProvider, context, runService);
+            WorkItemExternalTask externalTask = new WorkItemExternalTask(wi, values, context, runService);
             externalTasksByWorkItemIds.put(wi.getId(), externalTask);
         }
 
@@ -184,7 +184,7 @@ public class AzureDevopsWorkPlanIntegration extends WorkPlanIntegration {
             if (!et.getValue().getChildren().isEmpty()) {
                 // Summary task! If there's effort, we add itself as a [Work] child to reflect effort.
                 if (et.getValue().getEffort() != null && et.getValue().getEffort() > 0) {
-                    WorkItemExternalTask externalTaskLeaf = new WorkItemExternalTask(et.getValue().getWorkItem(), values, userProvider, context, runService);
+                    WorkItemExternalTask externalTaskLeaf = new WorkItemExternalTask(et.getValue().getWorkItem(), values, context, runService);
                     externalTaskLeaf.setIsWorkLeafTask(true);
                     et.getValue().addChildFirst(externalTaskLeaf);
                 }

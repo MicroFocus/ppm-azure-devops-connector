@@ -48,7 +48,7 @@ public class AzureDevopsService {
     private Map<String, List<Field>> workItemTypeFieldsCache = new HashMap<>();
 
     public WorkItem createWorkItem(String projectId, String entityType) {
-        String createWorkItemUrl =  "/"+projectId + "/"  + AzureDevopsConstants.API_WORK_ITEMS_END_POINT + "/" + entityType
+        String createWorkItemUrl =  "/"+projectId + AzureDevopsConstants.API_WORK_ITEMS_END_POINT + "/$" + entityType
                 + AzureDevopsConstants.VERSION_7_VERSION_SUFFIX +"&bypassRules=true";
 
         // Azure DevOps update works by sending an op for each field that is modified.
@@ -60,7 +60,7 @@ public class AzureDevopsService {
                 "}]";
 
 
-        return responseTo(WorkItem.class, restClient.sendPost(createWorkItemUrl, payload));
+        return responseTo(WorkItem.class, restClient.sendPostWithPatchContentType(createWorkItemUrl, payload));
     }
 
     public List<Project> getAllAvailableProjects() {

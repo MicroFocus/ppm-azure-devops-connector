@@ -40,7 +40,8 @@ public class AzureDevopsRestClient {
         this.restConfig = config;
     }
 
-    private String executeHttpRequest(String relativeUrl, String httpMethod, String jsonPayload) {
+    // Azure DevOps REST API needs a very specific content-type when doing PATCH.
+    private String executeHttpRequest(String relativeUrl, String httpMethod, String jsonPayload, boolean usePatchJsonContentType) {
 
         String fullUrl = AzureDevopsConstants.API_ROOT_URL + restConfig.getOrganizationUrl() + relativeUrl;
 
@@ -54,7 +55,7 @@ public class AzureDevopsRestClient {
                 if (jsonPayload != null) {
                     ((HttpPost)httpRequest).setEntity(new StringEntity(
                             jsonPayload,
-                            ContentType.APPLICATION_JSON));
+                            usePatchJsonContentType ? ContentType.create("application/json-patch+json") : ContentType.APPLICATION_JSON));
                 }
                 break;
             case "PATCH":
@@ -62,7 +63,7 @@ public class AzureDevopsRestClient {
                 if (jsonPayload != null) {
                     ((HttpPatch)httpRequest).setEntity(new StringEntity(
                             jsonPayload,
-                            ContentType.create("application/json-patch+json"))); // Azure DevOps REST API needs a very specific content-type when doing PATCH.
+                            usePatchJsonContentType ? ContentType.create("application/json-patch+json") : ContentType.APPLICATION_JSON));
                 }
                 break;
             default: // GET
@@ -126,7 +127,7 @@ public class AzureDevopsRestClient {
     }
 
     public String sendGet(String uri) {
-        return executeHttpRequest(uri, "GET", null);
+        return executeHttpRequest(uri, "GET", null, false);
     }
 
     private void checkResponseStatus(int expectedHttpStatusCode, CloseableHttpResponse response, String uri, String verb, String payload) {
@@ -156,11 +157,15 @@ public class AzureDevopsRestClient {
     }
 
     public String sendPost(String uri, String jsonPayload) {
-        return executeHttpRequest(uri, "POST", jsonPayload);
+        return executeHttpRequest(uri, "POST", jsonPayload, false);
+    }
+
+    public String sendPostWithPatchContentType(String uri, String jsonPayload) {
+        return executeHttpRequest(uri, "POST", jsonPayload, true);
     }
 
     public String sendPatch(String uri, String jsonPayload) {
-        return executeHttpRequest(uri, "PATCH", jsonPayload);
+        return executeHttpRequest(uri, "PATCH", jsonPayload, true);
     }
 
     /*public ClientResponse sendPut(String uri, String jsonPayload, int expectedHttpStatusCode) {

@@ -35,7 +35,7 @@ public class AzureDevopsIntegrationConnector extends IntegrationConnector {
 
     @Override
     public String getConnectorVersion() {
-        return "0.2";
+        return "0.3";
     }
 
     @Override

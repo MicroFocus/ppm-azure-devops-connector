@@ -10,23 +10,82 @@ import java.util.Date;
  */
 public class AzureDevopsExternalTaskActuals extends ExternalTaskActuals {
 
-    private Double effort;
+    private Double scheduledEffort;
+
+    private Double remainingEffort;
+
+    private Double actualEffort;
+
+    private double percentComplete;
     private ExternalTask.TaskStatus status;
     private long resourceId;
     private Date scheduledStart;
     private Date scheduledFinish;
 
-    public AzureDevopsExternalTaskActuals(Double effort, ExternalTask.TaskStatus taskStatus, Date scheduledStart, Date scheduledFinish, Long resourceId) {
-        this.effort = effort;
-        this.status = status;
+    public AzureDevopsExternalTaskActuals(Double scheduledEffort, Double remainingEffort, ExternalTask.TaskStatus taskStatus, Date scheduledStart, Date scheduledFinish, Long resourceId) {
+        this.scheduledEffort = scheduledEffort == null ? 0d: scheduledEffort;
+        this.remainingEffort = remainingEffort == null ? 0d : remainingEffort;
+        this.status = taskStatus;
         this.resourceId = resourceId == null ? -1 : resourceId.longValue();
         this.scheduledFinish = scheduledFinish;
         this.scheduledStart = scheduledStart;
+
+        // We will now adjust effort / remaining effort / percent complete to ensure that they match the standard PPM formulas:
+        // PC = AE / (AE + ERE)
+        // AE + ERE = SE
+        // AE = SE * PC
+        if (status == ExternalTask.TaskStatus.COMPLETED) {
+            // Completed -> 100% complete, no remaining effort.
+            percentComplete = 100;
+            this.remainingEffort = 0d;
+            this.actualEffort = this.scheduledEffort;
+        } else if (status == ExternalTask.TaskStatus.IN_PROGRESS) {
+            // If we have both scheduled & remaining effort, we can compute percent complete.
+            if (remainingEffort != null && scheduledEffort != null) {
+                this.actualEffort = scheduledEffort - remainingEffort;
+                if (this.actualEffort < 0) {
+                    this.actualEffort = 0d;
+                }
+                if (this.actualEffort > 0d) {
+                    this.percentComplete = 100d * this.actualEffort / (this.actualEffort + this.remainingEffort);
+                    if (this.percentComplete > 99d) {
+                        this.percentComplete = 99d;
+                    }
+                } else {
+                    // No actuals -> 1% complete
+                    this.percentComplete = 1d;
+                }
+            } else if (remainingEffort != null) {
+                // We only know how much work remains, so let's assume we're mid-way.
+                this.percentComplete = 50d;
+                this.scheduledEffort = this.remainingEffort * 2;
+                this.actualEffort = remainingEffort;
+            } else if (scheduledEffort != null) {
+                // We only know what's the total effort - so let's assume we're mid-way.
+                this.percentComplete = 50d;
+                this.actualEffort = this.scheduledEffort / 2d;
+                this.remainingEffort = this.scheduledEffort / 2d;
+            } else {
+                // We know nothing. We're still mid-way.
+                this.percentComplete = 50d;
+                this.actualEffort = 0d;
+            }
+        } else {
+            // Work not started.
+            percentComplete = 0;
+            this.actualEffort = 0d;
+            if (remainingEffort == null) {
+                this.remainingEffort = this.scheduledEffort;
+            } else if (scheduledEffort == null) {
+                this.scheduledEffort = this.remainingEffort;
+            }
+        }
+
     }
 
     @Override
     public double getScheduledEffort() {
-        return effort == null ? 0d: effort;
+        return scheduledEffort;
     }
 
     @Override
@@ -49,18 +108,12 @@ public class AzureDevopsExternalTaskActuals extends ExternalTaskActuals {
 
     @Override
     public double getActualEffort() {
-        return getPercentComplete() * getScheduledEffort();
+        return this.actualEffort;
     }
 
     @Override
     public double getPercentComplete() {
-        if (status == ExternalTask.TaskStatus.COMPLETED) {
-            return 100;
-        } else if (status == ExternalTask.TaskStatus.IN_PROGRESS) {
-            return 50;
-        } else {
-            return 0;
-        }
+        return percentComplete;
     }
 
     @Override
@@ -70,11 +123,6 @@ public class AzureDevopsExternalTaskActuals extends ExternalTaskActuals {
 
     @Override
     public Double getEstimatedRemainingEffort() {
-        // PPM enforces that PC = AE / (AE + ERE), so we have to compute ERE accordingly otherwise it will modify PC.
-        if (getPercentComplete() <= 0) {
-            return getScheduledEffort();
-        } else {
-            return getScheduledEffort() * (100 - getPercentComplete()) / getPercentComplete();
-        }
+        return this.remainingEffort;
     }
 }

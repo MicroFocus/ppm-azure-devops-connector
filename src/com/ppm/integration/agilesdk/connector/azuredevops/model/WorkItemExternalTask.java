@@ -34,6 +34,7 @@ public class WorkItemExternalTask extends ExternalTask {
     private ValueSet config;
     private UserProvider userProvider;
     private Double effort = 0.0d;
+    private Double remainingEffort = 0.0d;
     private List<User> resources = new ArrayList<>();
 
     private List<ExternalTask> children = new ArrayList<>();
@@ -51,6 +52,7 @@ public class WorkItemExternalTask extends ExternalTask {
         this.userProvider = service.getUserProvider();
         this.resources = this.workItem.getResourceField("System.AssignedTo", getProjectIdFromContext(context), userProvider);
         this.effort = this.workItem.getNumberField("Microsoft.VSTS.Scheduling.Effort");
+        this.remainingEffort = this.workItem.getNumberField("Microsoft.VSTS.Scheduling.RemainingWork");
         this.iteration = service.getIteration(this.workItem.getStringField("System.IterationPath"));
     }
 
@@ -135,17 +137,18 @@ public class WorkItemExternalTask extends ExternalTask {
         List<ExternalTaskActuals> actuals = new ArrayList<ExternalTaskActuals>();
 
         double effortValue = effort == null ? 0d: effort;
+        double remainingEffortValue = remainingEffort == null ? 0d : remainingEffort;
 
         final double numResources = resources.size();
 
         if (resources.isEmpty()) {
             // All is unassigned effort
-            ExternalTaskActuals unassignedActuals = new AzureDevopsExternalTaskActuals(effortValue, getStatus(), getScheduledStart(), getScheduledFinish(), null);
+            ExternalTaskActuals unassignedActuals = new AzureDevopsExternalTaskActuals(effort, remainingEffort, getStatus(), getScheduledStart(), getScheduledFinish(), null);
             actuals.add(unassignedActuals);
         } else {
             // One Actual entry per resource.
             for (final User resource : resources) {
-                ExternalTaskActuals resourceActuals = new AzureDevopsExternalTaskActuals(effortValue / numResources, getStatus(), getScheduledStart(), getScheduledFinish(), resource.getUserId());
+                ExternalTaskActuals resourceActuals = new AzureDevopsExternalTaskActuals(effortValue / numResources, remainingEffort / numResources, getStatus(), getScheduledStart(), getScheduledFinish(), resource.getUserId());
                 actuals.add(resourceActuals);
             }
         }

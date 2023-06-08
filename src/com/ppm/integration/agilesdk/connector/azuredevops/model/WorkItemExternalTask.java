@@ -143,12 +143,12 @@ public class WorkItemExternalTask extends ExternalTask {
 
         if (resources.isEmpty()) {
             // All is unassigned effort
-            ExternalTaskActuals unassignedActuals = new AzureDevopsExternalTaskActuals(effort, remainingEffort, getStatus(), getScheduledStart(), getScheduledFinish(), null);
+            ExternalTaskActuals unassignedActuals = new AzureDevopsExternalTaskActuals(effortValue, remainingEffortValue, getStatus(), getScheduledStart(), getScheduledFinish(), null);
             actuals.add(unassignedActuals);
         } else {
             // One Actual entry per resource.
             for (final User resource : resources) {
-                ExternalTaskActuals resourceActuals = new AzureDevopsExternalTaskActuals(effortValue / numResources, remainingEffort / numResources, getStatus(), getScheduledStart(), getScheduledFinish(), resource.getUserId());
+                ExternalTaskActuals resourceActuals = new AzureDevopsExternalTaskActuals(effortValue / numResources, remainingEffortValue / numResources, getStatus(), getScheduledStart(), getScheduledFinish(), resource.getUserId());
                 actuals.add(resourceActuals);
             }
         }

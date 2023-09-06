@@ -97,7 +97,7 @@ public class WorkItemExternalTask extends ExternalTask {
 
     @Override
     public String getName() {
-        return (isWorkLeafTask ? "[Work] " : "[" + this.workItem.getStringField("System.WorkItemType") + "]") + this.workItem.getStringField("System.Title");
+        return (isWorkLeafTask ? "[Work] " : "[" + this.workItem.getStringField("System.WorkItemType") + "] ") + this.workItem.getStringField("System.Title");
     }
 
     @Override

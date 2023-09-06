@@ -35,7 +35,7 @@ public class AzureDevopsIntegrationConnector extends IntegrationConnector {
 
     @Override
     public String getConnectorVersion() {
-        return "0.3";
+        return "0.4";
     }
 
     @Override
@@ -58,7 +58,8 @@ public class AzureDevopsIntegrationConnector extends IntegrationConnector {
                 new PlainText(AzureDevopsConstants.KEY_WP_IMPORTABLE_WORK_ITEM_TYPES, "LABEL_WP_IMPORTABLE_WORK_ITEM_TYPES", "Epic;Feature;User Story;Task", true),
                 new PlainText(AzureDevopsConstants.KEY_WP_IN_PROGRESS_STATUSES, "LABEL_WP_IN_PROGRESS_STATUSES", "Active;In Progress;Committed;Open;Doing", false),
                 new PlainText(AzureDevopsConstants.KEY_WP_CLOSED_STATUSES, "LABEL_WP_CLOSED_STATUSES", "Done;Closed;Inactive;Completed;Resolved", false),
-                new PlainText(AzureDevopsConstants.KEY_WP_IGNORED_STATUSES, "LABEL_WP_IGNORED_STATUSES", "Removed", false)
+                new PlainText(AzureDevopsConstants.KEY_WP_IGNORED_STATUSES, "LABEL_WP_IGNORED_STATUSES", "Removed", false),
+                new PlainText(AzureDevopsConstants.KEY_WP_EPIC_TYPES, "LABEL_WP_EPIC_TYPES", "Epic", false)
                 //new CheckBox(AzureDevopsConstants.KEY_FORCE_INTEGRATION_TOKEN_USE, "LABEL_FORCE_INTEGRATION_TOKEN_USE", false)
         });
     }

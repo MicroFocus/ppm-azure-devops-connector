@@ -43,7 +43,7 @@ public class AzureDevopsRestClient {
     // Azure DevOps REST API needs a very specific content-type when doing PATCH.
     private String executeHttpRequest(String relativeUrl, String httpMethod, String jsonPayload, boolean usePatchJsonContentType) {
 
-        String fullUrl = AzureDevopsConstants.API_ROOT_URL + restConfig.getOrganizationUrl() + relativeUrl;
+        String fullUrl = restConfig.getOrganizationUrl() + relativeUrl;
 
         logger.debug("url: " + fullUrl);
 

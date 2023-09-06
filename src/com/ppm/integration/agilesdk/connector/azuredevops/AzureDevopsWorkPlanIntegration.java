@@ -16,6 +16,7 @@ import com.ppm.integration.agilesdk.provider.Providers;
 import com.ppm.integration.agilesdk.provider.UserProvider;
 import com.ppm.integration.agilesdk.ui.*;
 import com.ppm.integration.agilesdk.ui.Field;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 import java.util.*;
@@ -26,6 +27,8 @@ public class AzureDevopsWorkPlanIntegration extends WorkPlanIntegration {
 
 
     private final Logger logger = Logger.getLogger(AzureDevopsWorkPlanIntegration.class);
+
+    final LocalizationProvider l10n = Providers.getLocalizationProvider(AzureDevopsIntegrationConnector.class);
 
     public AzureDevopsWorkPlanIntegration() {
     }
@@ -68,6 +71,44 @@ public class AzureDevopsWorkPlanIntegration extends WorkPlanIntegration {
 
 
         fields.add(projectsList);
+
+
+        DynamicDropdown epicsList = new DynamicDropdown(AzureDevopsConstants.KEY_WP_EPIC, "LABEL_EPIC_TO_SYNC", false) {
+            @Override
+            public List<String> getDependencies() {
+                return Arrays.asList(new String[]{AzureDevopsConstants.KEY_WP_PROJECT, AzureDevopsConstants.KEY_WP_INCLUDE_CLOSED});
+            }
+
+            @Override
+            public List<Option> getDynamicalOptions(ValueSet values) {
+                String projectId = values.get(AzureDevopsConstants.KEY_WP_PROJECT);
+
+                List<String> statusesToIgnore = new ArrayList<>();
+
+                final boolean includeClosed = values.getBoolean(AzureDevopsConstants.KEY_WP_INCLUDE_CLOSED, false);
+                if (!includeClosed) {
+                    statusesToIgnore.addAll(AzureDevOpsUtils.extractStringListParams(values.get(AzureDevopsConstants.KEY_WP_CLOSED_STATUSES)));
+                }
+
+                statusesToIgnore.addAll(AzureDevOpsUtils.extractStringListParams(values.get(AzureDevopsConstants.KEY_WP_IGNORED_STATUSES)));
+
+                String epicTypes = values.get(AzureDevopsConstants.KEY_WP_EPIC_TYPES);
+                // Fall back code for older connectors where the Epic work item type hasn't been captured in the connector Configuration
+                if (StringUtils.isBlank(epicTypes)) {
+                    epicTypes = "Epic";
+                }
+
+                final List<WorkItem> epics = getService(values).getAllWorkItemsInfoFromProject(projectId, AzureDevOpsUtils.extractStringListParams(epicTypes) ,statusesToIgnore.toArray(new String[statusesToIgnore.size()]));
+                Collections.sort(epics, (o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()));
+                List<Option> options = new ArrayList<>();
+                options.add(new DynamicDropdown.Option("", l10n.getConnectorText("ALL_RELEVANT_PROJECT_CONTENTS")));
+                epics.stream().forEach(wi -> options.add(new DynamicDropdown.Option(wi.getId(), wi.getName())));
+                return options;
+            }
+        };
+
+        fields.add(epicsList);
+
 
         SelectList importGroupSelectList = new SelectList(AzureDevopsConstants.KEY_IMPORT_GROUPS,"IMPORT_GROUPS",AzureDevopsConstants.GROUP_STRUCTURE,true)
                 .addLevel(AzureDevopsConstants.KEY_IMPORT_GROUPS, "IMPORT_GROUPS")
@@ -157,7 +198,14 @@ public class AzureDevopsWorkPlanIntegration extends WorkPlanIntegration {
         final AzureDevopsService runService = getService(values);
         final UserProvider userProvider = service.getUserProvider();
 
-        final List<WorkItem> workItems = runService.getProjectWorkItems(projectId, workItemTypes, statusesToIgnore.toArray(new String[statusesToIgnore.size()]));
+        final String specificWorkItemId = values.get(AzureDevopsConstants.KEY_WP_EPIC);
+
+        List<WorkItem> workItems = null;
+        if (!StringUtils.isBlank(specificWorkItemId)) {
+            workItems = runService.getProjectWorkItemAndChildren(projectId, specificWorkItemId, workItemTypes, statusesToIgnore.toArray(new String[statusesToIgnore.size()]));
+        } else {
+            workItems = runService.getProjectWorkItems(projectId, workItemTypes, statusesToIgnore.toArray(new String[statusesToIgnore.size()]));
+        }
 
         // We first create all External Tasks, but without any structure (children) info.
         Map<String, WorkItemExternalTask> externalTasksByWorkItemIds = new LinkedHashMap<>(workItems.size());

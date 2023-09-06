@@ -39,7 +39,7 @@ public class AzureDevopsConstants {
 
     public static final String API_ITERATIONS_URL = APIS_URL + "work/teamsettings/iterations" + VERSION_7_VERSION_SUFFIX;
 
-    public static final String API_WIQL_SUFFIX_URL = APIS_URL + "wit/wiql" + VERSION_51_VERSION_SUFFIX;
+    public static final String API_WIQL_SUFFIX_URL = APIS_URL + "wit/wiql" + VERSION_7_VERSION_SUFFIX;
 
     public static final String WP_WORK_ITEM_TYPE_PREFIX = "WP_WIT_";
 
@@ -48,6 +48,10 @@ public class AzureDevopsConstants {
     public static final String KEY_FORCE_INTEGRATION_TOKEN_USE = "forceIntegrationTokenUse";
 
     public static final String KEY_WP_PROJECT =  "wpProject";
+
+    public static final String KEY_WP_EPIC =  "wpEpic";
+
+    public static final String KEY_WP_EPIC_TYPES = "wpEpicTypes";
 
     public static final String KEY_WP_IMPORTABLE_WORK_ITEM_TYPES =  "wpImportableWorkItemTypes";
 

@@ -317,7 +317,7 @@ public class AzureDevopsService {
 
     public String getWorkItemUrl(String id) {
         // We don't need to include the project in URL, Azure DevOps only needs the ID and it will redirect to the right project.
-        return AzureDevopsConstants.API_ROOT_URL + restClient.getConfig().getOrganizationUrl() + "/_workitems/edit/" + id;
+        return restClient.getConfig().getOrganizationUrl() + "/_workitems/edit/" + id;
     }
 
     public List<WorkItem> getWorkItemsModifiedSince(String projectId, String workItemType, List<String> workItemIds, Date modifiedSinceDate) {
@@ -381,5 +381,69 @@ public class AzureDevopsService {
         }
         // No error = return null.
         return null;
+    }
+
+
+    public List<WorkItem> getAllWorkItemsInfoFromProject(String projectId, Collection<String> workItemTypes, String... statusesToExclude) {
+        // We first retrieve the list of all work items IDs by using WIQL, and then we retrieve work items details in batch of 200.
+        List<Long> workItemIds = runWIQL(new WIQLBuilder().addStatusesToExclude(statusesToExclude).setReturnedWorkItemType(workItemTypes), projectId);
+
+        // We only need the name & work item type info here.
+        List<WorkItem> workItems = getWorkItemsByIds(workItemIds, "System.Title", "System.WorkItemType", "System.State");
+
+        workItems.forEach(wi -> {wi.setName(wi.getStringField("System.Title"));});
+
+        return workItems;
+
+    }
+
+    public List<WorkItem> getProjectWorkItemAndChildren(String projectId, String specificWorkItemId, Set<String> workItemTypes, String... statusesToExclude) {
+        // We get the children recursively until there's no more children to return.
+        List<Long> workItemIds = runDescendantLinksWIQL(projectId, specificWorkItemId, workItemTypes, statusesToExclude);
+
+        List<WorkItem> workItems = getWorkItemsByIds(workItemIds);
+
+        return workItems;
+    }
+
+    private List<Long> runDescendantLinksWIQL(String projectId, String specificWorkItemId, Set<String> workItemTypes, String[] statusesToExclude) {
+        String wiqlRelativeUrl = "/" + projectId + AzureDevopsConstants.API_WIQL_SUFFIX_URL;
+
+        String wiql = "Select [System.Id] From WorkItemLinks Where ( [System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward' and Source.[System.Id] = "+specificWorkItemId;
+
+        if (statusesToExclude != null && statusesToExclude.length > 0) {
+            wiql += " and ("+org.apache.commons.lang3.StringUtils.join(Arrays.asList(statusesToExclude).stream().map(status -> " Target.[State] <> '"+status+"' ").collect(Collectors.toList()), " AND ")
+            + ") ";
+        }
+
+        if (workItemTypes != null && !workItemTypes.isEmpty()) {
+
+            wiql += " and ("+org.apache.commons.lang3.StringUtils.join(workItemTypes.stream().map(wit -> {return " Target.[System.WorkItemType] = '"+wit+"' ";}).collect(Collectors.toList()), " OR ")
+            + ") ";
+        }
+
+
+        wiql += ") mode (Recursive)";
+
+        String payload = "{\n" +
+                "  \"query\": \""+wiql+"\"\n" +
+                "}";
+
+        String response = restClient.sendPost(wiqlRelativeUrl, payload);
+
+        JsonElement listResponse = JsonParser.parseString(response);
+        JsonArray workItemRelations = listResponse.getAsJsonObject().get("workItemRelations").getAsJsonArray();
+        List<Long> workItemIds = new ArrayList<>(workItemRelations.size());
+        for (JsonElement workItemRelation : workItemRelations) {
+            if (workItemRelation.isJsonObject() && !workItemRelation.getAsJsonObject().isJsonNull()
+                    && workItemRelation.getAsJsonObject().has("target")) {
+                JsonElement target = workItemRelation.getAsJsonObject().get("target");
+                if (target != null && !target.isJsonNull() && target.isJsonObject() && target.getAsJsonObject().has("id")) {
+                    workItemIds.add(target.getAsJsonObject().get("id").getAsLong());
+                }
+            }
+        }
+
+        return workItemIds;
     }
 }

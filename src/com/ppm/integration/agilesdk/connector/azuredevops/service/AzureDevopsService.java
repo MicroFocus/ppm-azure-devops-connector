@@ -287,7 +287,8 @@ public class AzureDevopsService {
             }
             payload.add(op);
         }
-        return responseTo(WorkItem.class, restClient.sendPatch(updateWorkItemUrl, payload.toString()));
+        String payloadStr = payload.toString();
+        return responseTo(WorkItem.class, restClient.sendPatch(updateWorkItemUrl, payloadStr));
     }
 
     private void setValuePropertyFromDataField(JsonObject o, DataField field) {

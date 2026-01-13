@@ -24,7 +24,6 @@ import org.apache.http.util.EntityUtils;
 
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 /** Unlike the other AgileSDK connectors that use Wink REST Client, AzureDevOps uses Apache HttpClient (which is only bundled in PPM 2023+) because
@@ -56,7 +55,7 @@ public class AzureDevopsRestClient {
                 if (jsonPayload != null) {
                     ((HttpPost)httpRequest).setEntity(new StringEntity(
                             jsonPayload,
-                            usePatchJsonContentType ? ContentType.create("application/json-patch+json",StandardCharsets.UTF_8) : ContentType.APPLICATION_JSON));
+                            usePatchJsonContentType ? ContentType.create("application/json-patch+json") : ContentType.APPLICATION_JSON));
                 }
                 break;
             case "PATCH":
@@ -64,7 +63,7 @@ public class AzureDevopsRestClient {
                 if (jsonPayload != null) {
                     ((HttpPatch)httpRequest).setEntity(new StringEntity(
                             jsonPayload,
-                            usePatchJsonContentType ? ContentType.create("application/json-patch+json", StandardCharsets.UTF_8) : ContentType.APPLICATION_JSON));
+                            usePatchJsonContentType ? ContentType.create("application/json-patch+json") : ContentType.APPLICATION_JSON));
                 }
                 break;
             default: // GET

@@ -277,18 +277,17 @@ public class AzureDevopsService {
         JsonArray payload = new JsonArray();
         while (fields.hasNext()) {
             Map.Entry<String, DataField> field = fields.next();
-            JsonObject op = new JsonObject();
-            op.addProperty("path", "/fields/"+field.getKey());
-            if(field.getValue() == null || field.getValue().get() == null){
-                op.addProperty("op", "remove");
-            }else{
-                op.addProperty("op", "replace");
-                setValuePropertyFromDataField(op, field.getValue());
+            if(field.getValue() == null || field.getValue().get() == null) {
+                continue;
             }
+            JsonObject op = new JsonObject();
+            op.addProperty("op", "replace");
+            op.addProperty("path", "/fields/"+field.getKey());
+            setValuePropertyFromDataField(op, field.getValue());
             payload.add(op);
         }
-        String payloadStr = payload.toString();
-        return responseTo(WorkItem.class, restClient.sendPatch(updateWorkItemUrl, payloadStr));
+
+        return responseTo(WorkItem.class, restClient.sendPatch(updateWorkItemUrl, payload.toString()));
     }
 
     private void setValuePropertyFromDataField(JsonObject o, DataField field) {

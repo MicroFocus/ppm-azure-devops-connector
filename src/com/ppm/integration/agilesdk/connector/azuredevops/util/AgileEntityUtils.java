@@ -64,6 +64,14 @@ public class AgileEntityUtils {
                     return f;
                 }
                 return null;
+            case INTEGER:
+            case FLOAT:
+                f = new StringField();
+                Double v = wi.getNumberField(field.getReferenceName());
+                if (v != null) {
+                    f.set(v.toString());
+                }
+                return f;
             default: // STRING, MEMO, and anything else.
                 f = new StringField();
                 f.set(wi.getStringField(field.getReferenceName()));
@@ -92,14 +100,16 @@ public class AgileEntityUtils {
                         || "Microsoft.VSTS.Common.ReviewedBy".equals(field.getReferenceName())
                 )) {
             return DataField.DATA_TYPE.USER;
-        } else if ("integer".equals(field.getType()) || "picklistInteger".equals(field.getType())
-                || "double".equals(field.getType()) || "picklistDouble".equals(field.getType())) {
-            // Numeric fields with allowed values (e.g. Priority: 1,2,3,4) use ListNode for PPM value mapping support.
-            // Numeric fields without allowed values (e.g. Effort, Story Points) use STRING.
+        } else if ("integer".equals(field.getType()) || "picklistInteger".equals(field.getType())) {
             if (field.getAllowedValues() != null && field.getAllowedValues().length > 0) {
                 return DataField.DATA_TYPE.ListNode;
             }
-            return DataField.DATA_TYPE.STRING;
+            return DataField.DATA_TYPE.INTEGER;
+        } else if ("double".equals(field.getType()) || "picklistDouble".equals(field.getType())) {
+            if (field.getAllowedValues() != null && field.getAllowedValues().length > 0) {
+                return DataField.DATA_TYPE.ListNode;
+            }
+            return DataField.DATA_TYPE.FLOAT;
         } else if ("html".equals(field.getType())) {
             return DataField.DATA_TYPE.MEMO;
         } else {

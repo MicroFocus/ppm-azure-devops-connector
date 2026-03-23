@@ -51,14 +51,19 @@ public class AgileEntityUtils {
                 } else {
                     return null;
                 }
-            case INTEGER:
-            case FLOAT:
-                f = new StringField();
-                Double v = wi.getNumberField(field.getReferenceName());
-                if (v != null) {
-                    f.set(v.toString());
+            case ListNode:
+                Double numValue = wi.getNumberField(field.getReferenceName());
+                if (numValue != null) {
+                    f = new ListNodeField();
+                    ListNode node = new ListNode();
+                    String strVal = ("integer".equals(field.getType()) || "picklistInteger".equals(field.getType()))
+                            ? String.valueOf(numValue.longValue()) : numValue.toString();
+                    node.setId(strVal);
+                    node.setName(strVal);
+                    f.set(node);
+                    return f;
                 }
-                return f;
+                return null;
             default: // STRING, MEMO, and anything else.
                 f = new StringField();
                 f.set(wi.getStringField(field.getReferenceName()));
@@ -87,10 +92,14 @@ public class AgileEntityUtils {
                         || "Microsoft.VSTS.Common.ReviewedBy".equals(field.getReferenceName())
                 )) {
             return DataField.DATA_TYPE.USER;
-        } else if ("integer".equals(field.getType()) || "picklistInteger".equals(field.getType())) {
-            return DataField.DATA_TYPE.INTEGER;
-        } else if ("double".equals(field.getType()) || "picklistDouble".equals(field.getType())) {
-            return DataField.DATA_TYPE.FLOAT;
+        } else if ("integer".equals(field.getType()) || "picklistInteger".equals(field.getType())
+                || "double".equals(field.getType()) || "picklistDouble".equals(field.getType())) {
+            // Numeric fields with allowed values (e.g. Priority: 1,2,3,4) use ListNode for PPM value mapping support.
+            // Numeric fields without allowed values (e.g. Effort, Story Points) use STRING.
+            if (field.getAllowedValues() != null && field.getAllowedValues().length > 0) {
+                return DataField.DATA_TYPE.ListNode;
+            }
+            return DataField.DATA_TYPE.STRING;
         } else if ("html".equals(field.getType())) {
             return DataField.DATA_TYPE.MEMO;
         } else {

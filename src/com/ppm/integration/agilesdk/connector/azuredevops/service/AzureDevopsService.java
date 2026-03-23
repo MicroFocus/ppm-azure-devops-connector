@@ -303,14 +303,34 @@ public class AzureDevopsService {
                     o.addProperty("value", user.getFullName());
                 }
                 return;
-            case FLOAT:
-                o.addProperty("value", (Float) field.get());
-                return;
-            case INTEGER:
-                o.addProperty("value", (Long) field.get());
+            case ListNode:
+                com.ppm.integration.agilesdk.dm.ListNode node = (com.ppm.integration.agilesdk.dm.ListNode) field.get();
+                String nodeVal = node != null && node.getId() != null ? node.getId() : (node != null ? node.getName() : null);
+                if (nodeVal != null) {
+                    try {
+                        o.addProperty("value", Long.parseLong(nodeVal));
+                    } catch (NumberFormatException e) {
+                        try {
+                            o.addProperty("value", Double.parseDouble(nodeVal));
+                        } catch (NumberFormatException e2) {
+                            o.addProperty("value", nodeVal);
+                        }
+                    }
+                } else {
+                    o.addProperty("value", (String) null);
+                }
                 return;
             default: //  String
-                o.addProperty("value", field.get().toString());
+                String strValue = field.get().toString();
+                try {
+                    o.addProperty("value", Long.parseLong(strValue));
+                } catch (NumberFormatException e) {
+                    try {
+                        o.addProperty("value", Double.parseDouble(strValue));
+                    } catch (NumberFormatException e2) {
+                        o.addProperty("value", strValue);
+                    }
+                }
                 return;
         }
     }

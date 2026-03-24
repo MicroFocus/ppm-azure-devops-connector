@@ -304,21 +304,8 @@ public class AzureDevopsService {
                 }
                 return;
             case ListNode:
-                com.ppm.integration.agilesdk.dm.ListNode node = (com.ppm.integration.agilesdk.dm.ListNode) field.get();
-                String nodeVal = node != null && node.getId() != null ? node.getId() : (node != null ? node.getName() : null);
-                if (nodeVal != null) {
-                    try {
-                        o.addProperty("value", Long.parseLong(nodeVal));
-                    } catch (NumberFormatException e) {
-                        try {
-                            o.addProperty("value", Double.parseDouble(nodeVal));
-                        } catch (NumberFormatException e2) {
-                            o.addProperty("value", nodeVal);
-                        }
-                    }
-                } else {
-                    o.addProperty("value", (String) null);
-                }
+                String listValue = ((com.ppm.integration.agilesdk.dm.ListNode) field.get()).getName();
+                addNumericOrStringProperty(o, "value", listValue);
                 return;
             case FLOAT:
                 o.addProperty("value", (Float) field.get());
@@ -329,6 +316,22 @@ public class AzureDevopsService {
             default: //  String
                 o.addProperty("value", field.get().toString());
                 return;
+        }
+    }
+
+    private void addNumericOrStringProperty(JsonObject o, String propertyName, String value) {
+        if (value == null) {
+            o.addProperty(propertyName, (String) null);
+            return;
+        }
+        try {
+            o.addProperty(propertyName, Long.parseLong(value));
+        } catch (NumberFormatException e1) {
+            try {
+                o.addProperty(propertyName, Double.parseDouble(value));
+            } catch (NumberFormatException e2) {
+                o.addProperty(propertyName, value);
+            }
         }
     }
 

@@ -303,6 +303,10 @@ public class AzureDevopsService {
                     o.addProperty("value", user.getFullName());
                 }
                 return;
+            case ListNode:
+                String listValue = ((com.ppm.integration.agilesdk.dm.ListNode) field.get()).getName();
+                addNumericOrStringProperty(o, "value", listValue);
+                return;
             case FLOAT:
                 o.addProperty("value", (Float) field.get());
                 return;
@@ -312,6 +316,22 @@ public class AzureDevopsService {
             default: //  String
                 o.addProperty("value", field.get().toString());
                 return;
+        }
+    }
+
+    private void addNumericOrStringProperty(JsonObject o, String propertyName, String value) {
+        if (value == null) {
+            o.addProperty(propertyName, (String) null);
+            return;
+        }
+        try {
+            o.addProperty(propertyName, Long.parseLong(value));
+        } catch (NumberFormatException e1) {
+            try {
+                o.addProperty(propertyName, Double.parseDouble(value));
+            } catch (NumberFormatException e2) {
+                o.addProperty(propertyName, value);
+            }
         }
     }
 

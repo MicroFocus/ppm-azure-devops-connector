@@ -51,6 +51,19 @@ public class AgileEntityUtils {
                 } else {
                     return null;
                 }
+            case ListNode:
+                Double numValue = wi.getNumberField(field.getReferenceName());
+                if (numValue != null) {
+                    f = new ListNodeField();
+                    ListNode node = new ListNode();
+                    String strVal = ("integer".equals(field.getType()) || "picklistInteger".equals(field.getType()))
+                            ? String.valueOf(numValue.longValue()) : numValue.toString();
+                    node.setId(strVal);
+                    node.setName(strVal);
+                    f.set(node);
+                    return f;
+                }
+                return null;
             case INTEGER:
             case FLOAT:
                 f = new StringField();
@@ -88,8 +101,14 @@ public class AgileEntityUtils {
                 )) {
             return DataField.DATA_TYPE.USER;
         } else if ("integer".equals(field.getType()) || "picklistInteger".equals(field.getType())) {
+            if (field.getAllowedValues() != null && field.getAllowedValues().length > 0) {
+                return DataField.DATA_TYPE.ListNode;
+            }
             return DataField.DATA_TYPE.INTEGER;
         } else if ("double".equals(field.getType()) || "picklistDouble".equals(field.getType())) {
+            if (field.getAllowedValues() != null && field.getAllowedValues().length > 0) {
+                return DataField.DATA_TYPE.ListNode;
+            }
             return DataField.DATA_TYPE.FLOAT;
         } else if ("html".equals(field.getType())) {
             return DataField.DATA_TYPE.MEMO;

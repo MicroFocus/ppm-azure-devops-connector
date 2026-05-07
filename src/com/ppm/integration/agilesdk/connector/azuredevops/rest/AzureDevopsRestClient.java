@@ -8,7 +8,7 @@ package com.ppm.integration.agilesdk.connector.azuredevops.rest;
 
 import com.kintana.core.logging.LogManager;
 import com.kintana.core.logging.Logger;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.impl.client.HttpClients;
 import org.springframework.http.HttpEntity;

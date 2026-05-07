@@ -5,7 +5,7 @@ import com.ppm.integration.agilesdk.connector.azuredevops.model.WorkItem;
 import com.ppm.integration.agilesdk.connector.azuredevops.service.AzureDevopsService;
 import com.ppm.integration.agilesdk.dm.*;
 import com.ppm.integration.agilesdk.model.AgileEntity;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 

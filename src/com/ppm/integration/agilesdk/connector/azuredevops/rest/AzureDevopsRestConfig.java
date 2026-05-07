@@ -7,7 +7,7 @@ package com.ppm.integration.agilesdk.connector.azuredevops.rest;
 
 
 import com.ppm.integration.agilesdk.connector.azuredevops.AzureDevopsConstants;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.nio.charset.Charset;
 import java.util.Base64;

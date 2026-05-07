@@ -15,7 +15,6 @@ import com.ppm.integration.agilesdk.pm.ExternalTask;
 import com.ppm.integration.agilesdk.pm.ExternalTaskActuals;
 import com.ppm.integration.agilesdk.pm.WorkPlanIntegrationContext;
 import com.ppm.integration.agilesdk.provider.UserProvider;
-import org.apache.commons.lang.StringUtils;
 
 import java.lang.reflect.Method;
 import java.util.*;

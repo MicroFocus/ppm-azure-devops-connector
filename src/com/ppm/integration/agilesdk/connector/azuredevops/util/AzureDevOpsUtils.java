@@ -3,7 +3,7 @@ package com.ppm.integration.agilesdk.connector.azuredevops.util;
 import com.kintana.core.logging.LogManager;
 import com.kintana.core.logging.Logger;
 import com.ppm.integration.agilesdk.connector.azuredevops.model.WorkItemExternalTask;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;

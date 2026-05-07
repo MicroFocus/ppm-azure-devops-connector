@@ -8,7 +8,6 @@ package com.ppm.integration.agilesdk.connector.azuredevops.rest;
 
 import com.ppm.integration.agilesdk.connector.azuredevops.AzureDevopsConstants;
 import org.apache.commons.lang.StringUtils;
-import org.apache.wink.client.ClientConfig;
 
 import java.nio.charset.Charset;
 import java.util.Base64;

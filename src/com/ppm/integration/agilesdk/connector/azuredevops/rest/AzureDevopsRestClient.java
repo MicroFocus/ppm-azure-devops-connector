@@ -8,26 +8,26 @@ package com.ppm.integration.agilesdk.connector.azuredevops.rest;
 
 import com.kintana.core.logging.LogManager;
 import com.kintana.core.logging.Logger;
-import com.ppm.integration.agilesdk.connector.azuredevops.AzureDevopsConstants;
-import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpEntity;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.*;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.util.EntityUtils;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.ClientHttpRequest;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.util.StreamUtils;
 
 
-import javax.ws.rs.core.MediaType;
-import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-/** Unlike the other AgileSDK connectors that use Wink REST Client, AzureDevOps uses Apache HttpClient (which is only bundled in PPM 2023+) because
+/** Unlike the other AgileSDK connectors that use Wink REST Client, Azure DevOps uses Spring HTTP client abstractions because
  * Azure DevOps REST API requires HTTP PATCH to update work items, and Java HttpUrlConnection (used in Wink REST Client) doesn't support it...
  * */
 public class AzureDevopsRestClient {
@@ -48,78 +48,36 @@ public class AzureDevopsRestClient {
 
         logger.debug("url: " + fullUrl);
 
-        HttpRequestBase httpRequest = null;
-
-        switch(httpMethod) {
-            case "POST":
-                httpRequest = new HttpPost(fullUrl);
-                if (jsonPayload != null) {
-                    ((HttpPost)httpRequest).setEntity(new StringEntity(
-                            jsonPayload,
-                            usePatchJsonContentType ? ContentType.create("application/json-patch+json",StandardCharsets.UTF_8) : ContentType.APPLICATION_JSON));
-                }
-                break;
-            case "PATCH":
-                httpRequest = new HttpPatch(fullUrl);
-                if (jsonPayload != null) {
-                    ((HttpPatch)httpRequest).setEntity(new StringEntity(
-                            jsonPayload,
-                            usePatchJsonContentType ? ContentType.create("application/json-patch+json", StandardCharsets.UTF_8) : ContentType.APPLICATION_JSON));
-                }
-                break;
-            default: // GET
-                httpRequest = new HttpGet(fullUrl);
-                break;
-        }
-
-        httpRequest.addHeader(new BasicHeader("accept", MediaType.APPLICATION_JSON));
-        httpRequest.addHeader(new BasicHeader("Authorization", restConfig.getBasicAuthorizationHeaderValue()));
-        // Following header is required for easy HTTP request tracing in systems such as DataPower.
-        httpRequest.addHeader(new BasicHeader("X-B3-TraceId", UUID.randomUUID().toString()));
-
-
-        // Proxy setting
-        if (!StringUtils.isBlank(restConfig.getProxyHost())) {
-            HttpHost proxy = new HttpHost(restConfig.getProxyHost(), restConfig.getProxyPort(), "http");
-
-            RequestConfig config = RequestConfig.custom()
-                    .setProxy(proxy)
-                    .build();
-            httpRequest.setConfig(config);
-        }
-
-
-        // HTTP Request is ready. Let's execute it now.
-        CloseableHttpResponse response = null;
-        CloseableHttpClient httpClient = HttpClients.createDefault();
-
+        ClientHttpResponse response = null;
         try {
-            response = httpClient.execute(httpRequest);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setAccept(java.util.Collections.singletonList(MediaType.APPLICATION_JSON));
+            headers.set(HttpHeaders.AUTHORIZATION, restConfig.getBasicAuthorizationHeaderValue());
+            // Following header is required for easy HTTP request tracing in systems such as DataPower.
+            headers.set("X-B3-TraceId", UUID.randomUUID().toString());
+
+            if (jsonPayload != null) {
+                headers.setContentType(usePatchJsonContentType
+                        ? MediaType.parseMediaType("application/json-patch+json;charset=UTF-8")
+                        : new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8));
+            }
+
+            HttpEntity<String> requestEntity = new HttpEntity<String>(jsonPayload, headers);
+            ClientHttpRequest request = buildHttpRequest(fullUrl, httpMethod, requestEntity);
+            response = request.execute();
+            ResponseEntity<String> responseEntity = ResponseEntity.status(response.getRawStatusCode()).headers(response.getHeaders()).body(readResponseBody(response));
 
             // All Azure DevOps REST calls should return HTTP 200 status code if successful.
-            checkResponseStatus(200, response, fullUrl, httpMethod, jsonPayload);
+            checkResponseStatus(200, responseEntity, fullUrl, httpMethod, jsonPayload);
 
-            HttpEntity responseContent = response.getEntity();
-
-            if (responseContent != null) {
-                return EntityUtils.toString(responseContent);
-            } else {
-                return "";
-            }
+            return responseEntity.getBody() != null ? responseEntity.getBody() : "";
         } catch (Exception e) {
             throw new RuntimeException("Error occurred when making REST call to " + fullUrl, e);
         } finally {
             if (response != null) {
                 try {
                     response.close();
-                } catch (IOException e) {
-                    // Do nothing.
-                }
-            }
-            if (httpClient != null) {
-                try {
-                    httpClient.close();
-                } catch (IOException e) {
+                } catch (Exception e) {
                     // Do nothing.
                 }
             }
@@ -131,29 +89,55 @@ public class AzureDevopsRestClient {
         return executeHttpRequest(uri, "GET", null, false);
     }
 
-    private void checkResponseStatus(int expectedHttpStatusCode, CloseableHttpResponse response, String uri, String verb, String payload) {
+    private ClientHttpRequestFactory createRequestFactory() {
+        HttpComponentsClientHttpRequestFactory factory;
+        if (!StringUtils.isBlank(restConfig.getProxyHost())) {
+            factory = new HttpComponentsClientHttpRequestFactory(HttpClients.custom()
+                    .setProxy(new HttpHost(restConfig.getProxyHost(), restConfig.getProxyPort(), "http"))
+                    .build());
+        } else {
+            factory = new HttpComponentsClientHttpRequestFactory();
+        }
+        factory.setConnectTimeout(60000);
+        factory.setReadTimeout(60000);
+        return factory;
+    }
 
-        if (response.getStatusLine().getStatusCode() != expectedHttpStatusCode) {
-            StringBuilder errorMessage = new StringBuilder(String.format("## Unexpected HTTP response status code %s for %s uri %s, expected %s", response.getStatusLine().getStatusCode(), verb, uri, expectedHttpStatusCode));
+    private ClientHttpRequest buildHttpRequest(String fullUrl, String httpMethod, HttpEntity<String> requestEntity) throws java.io.IOException {
+        ClientHttpRequest request = createRequestFactory().createRequest(URI.create(fullUrl), HttpMethod.resolve(httpMethod));
+
+        for (String headerName : requestEntity.getHeaders().keySet()) {
+            for (String headerValue : requestEntity.getHeaders().get(headerName)) {
+                request.getHeaders().add(headerName, headerValue);
+            }
+        }
+
+        String body = requestEntity.getBody();
+        if (body != null) {
+            StreamUtils.copy(body, StandardCharsets.UTF_8, request.getBody());
+        }
+
+        return request;
+    }
+
+    private String readResponseBody(ClientHttpResponse response) throws java.io.IOException {
+        return response.getBody() != null ? StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8) : "";
+    }
+
+    private void checkResponseStatus(int expectedHttpStatusCode, ResponseEntity<String> response, String uri, String verb, String payload) {
+
+        if (response.getStatusCodeValue() != expectedHttpStatusCode) {
+            StringBuilder errorMessage = new StringBuilder(String.format("## Unexpected HTTP response status code %s for %s uri %s, expected %s", response.getStatusCodeValue(), verb, uri, expectedHttpStatusCode));
 
             if (payload != null) {
                 errorMessage.append(System.lineSeparator()).append(System.lineSeparator()).append("# Sent Payload:").append(System.lineSeparator()).append(payload);
             }
-            String responseStr = null;
-            try {
-                HttpEntity responseContent = response.getEntity();
-
-                if (responseContent != null) {
-                    responseStr = EntityUtils.toString(responseContent);
-                }
-            } catch (Exception e) {
-                // we don't do anything if we cannot get the response.
-            }
+            String responseStr = response.getBody();
             if (!StringUtils.isBlank(responseStr)) {
                 errorMessage.append(System.lineSeparator()).append(System.lineSeparator()).append("# Received Response:").append(System.lineSeparator()).append(responseStr);
             }
 
-            throw new RestRequestException(response.getStatusLine().getStatusCode(), errorMessage.toString());
+            throw new RestRequestException(response.getStatusCodeValue(), errorMessage.toString());
         }
     }
 

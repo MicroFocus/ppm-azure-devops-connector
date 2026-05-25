@@ -244,9 +244,8 @@ public class AzureDevopsService {
         if (witFields != null) {
             return witFields;
         }
-
         // First we get fields from work item type (to have allowed Values)
-        String workItemTypeFieldsUrl = "/"+projectId + "/"  + AzureDevopsConstants.API_WORK_ITEM_TYPES_ENDPOINT + "/"+workItemTypeId
+        String workItemTypeFieldsUrl = "/"+projectId + "/"  + AzureDevopsConstants.API_WORK_ITEM_TYPES_ENDPOINT + "/"+workItemTypeId.replace(" ", "%20")
                 + "/fields" + AzureDevopsConstants.VERSION_7_VERSION_SUFFIX + "&$expand=allowedValues";
         witFields  = responseToListOf(Field.class, restClient.sendGet(workItemTypeFieldsUrl));
 

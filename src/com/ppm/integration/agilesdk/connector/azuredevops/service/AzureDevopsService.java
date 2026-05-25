@@ -14,6 +14,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -244,10 +246,11 @@ public class AzureDevopsService {
         if (witFields != null) {
             return witFields;
         }
-
         // First we get fields from work item type (to have allowed Values)
-        String workItemTypeFieldsUrl = "/"+projectId + "/"  + AzureDevopsConstants.API_WORK_ITEM_TYPES_ENDPOINT + "/"+workItemTypeId
-                + "/fields" + AzureDevopsConstants.VERSION_7_VERSION_SUFFIX + "&$expand=allowedValues";
+        String path = "/" + projectId + "/" + AzureDevopsConstants.API_WORK_ITEM_TYPES_ENDPOINT + "/" + workItemTypeId + "/fields";
+        String query = AzureDevopsConstants.VERSION_7_VERSION_SUFFIX + "&$expand=allowedValues";
+
+        String workItemTypeFieldsUrl = buildEncodedURIString(path, query);
         witFields  = responseToListOf(Field.class, restClient.sendGet(workItemTypeFieldsUrl));
 
         // Then we get fields details to get type
@@ -267,6 +270,14 @@ public class AzureDevopsService {
         workItemTypeFieldsCache.put(projectId+"_"+workItemTypeId, witFields);
 
         return witFields;
+    }
+
+    private String buildEncodedURIString(String path, String query) {
+        try {
+            return new URI(null, null, path, query, null).toString();
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid work item type fields URL parameters", e);
+        }
     }
 
     public WorkItem updateWorkItem(String projectId, String workItemId, Iterator<Map.Entry<String, DataField>> fields) {

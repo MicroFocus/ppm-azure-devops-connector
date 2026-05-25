@@ -247,8 +247,7 @@ public class AzureDevopsService {
             return witFields;
         }
         // First we get fields from work item type (to have allowed Values)
-        String workItemTypeFieldsUrl = "/"+projectId + "/"  + AzureDevopsConstants.API_WORK_ITEM_TYPES_ENDPOINT + "/"+encodePathSegment(workItemTypeId)
-                + "/fields" + AzureDevopsConstants.VERSION_7_VERSION_SUFFIX + "&$expand=allowedValues";
+        String workItemTypeFieldsUrl = buildEncodedURIString(projectId, workItemTypeId);
         witFields  = responseToListOf(Field.class, restClient.sendGet(workItemTypeFieldsUrl));
 
         // Then we get fields details to get type
@@ -270,12 +269,13 @@ public class AzureDevopsService {
         return witFields;
     }
 
-    private String encodePathSegment(String value) {
+    private String buildEncodedURIString(String projectId, String workItemTypeId) {
         try {
-            // Build a URI with a single path segment and read back its encoded representation.
-            return new URI(null, null, "/" + value, null).getRawPath().substring(1);
+            String path = "/" + projectId + "/" + AzureDevopsConstants.API_WORK_ITEM_TYPES_ENDPOINT + "/" + workItemTypeId + "/fields";
+            String query = AzureDevopsConstants.VERSION_7_VERSION_SUFFIX + "&$expand=allowedValues";
+            return new URI(null, null, path, query, null).toString();
         } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Invalid path segment value", e);
+            throw new IllegalArgumentException("Invalid work item type fields URL parameters", e);
         }
     }
 

@@ -247,7 +247,10 @@ public class AzureDevopsService {
             return witFields;
         }
         // First we get fields from work item type (to have allowed Values)
-        String workItemTypeFieldsUrl = buildEncodedURIString(projectId, workItemTypeId);
+        String path = "/" + projectId + "/" + AzureDevopsConstants.API_WORK_ITEM_TYPES_ENDPOINT + "/" + workItemTypeId + "/fields";
+        String query = AzureDevopsConstants.VERSION_7_VERSION_SUFFIX + "&$expand=allowedValues";
+
+        String workItemTypeFieldsUrl = buildEncodedURIString(path, query);
         witFields  = responseToListOf(Field.class, restClient.sendGet(workItemTypeFieldsUrl));
 
         // Then we get fields details to get type
@@ -269,10 +272,8 @@ public class AzureDevopsService {
         return witFields;
     }
 
-    private String buildEncodedURIString(String projectId, String workItemTypeId) {
+    private String buildEncodedURIString(String path, String query) {
         try {
-            String path = "/" + projectId + "/" + AzureDevopsConstants.API_WORK_ITEM_TYPES_ENDPOINT + "/" + workItemTypeId + "/fields";
-            String query = AzureDevopsConstants.VERSION_7_VERSION_SUFFIX + "&$expand=allowedValues";
             return new URI(null, null, path, query, null).toString();
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Invalid work item type fields URL parameters", e);

@@ -14,6 +14,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -245,7 +247,7 @@ public class AzureDevopsService {
             return witFields;
         }
         // First we get fields from work item type (to have allowed Values)
-        String workItemTypeFieldsUrl = "/"+projectId + "/"  + AzureDevopsConstants.API_WORK_ITEM_TYPES_ENDPOINT + "/"+workItemTypeId.replace(" ", "%20")
+        String workItemTypeFieldsUrl = "/"+projectId + "/"  + AzureDevopsConstants.API_WORK_ITEM_TYPES_ENDPOINT + "/"+encodePathSegment(workItemTypeId)
                 + "/fields" + AzureDevopsConstants.VERSION_7_VERSION_SUFFIX + "&$expand=allowedValues";
         witFields  = responseToListOf(Field.class, restClient.sendGet(workItemTypeFieldsUrl));
 
@@ -266,6 +268,15 @@ public class AzureDevopsService {
         workItemTypeFieldsCache.put(projectId+"_"+workItemTypeId, witFields);
 
         return witFields;
+    }
+
+    private String encodePathSegment(String value) {
+        try {
+            // Build a URI with a single path segment and read back its encoded representation.
+            return new URI(null, null, "/" + value, null).getRawPath().substring(1);
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid path segment value", e);
+        }
     }
 
     public WorkItem updateWorkItem(String projectId, String workItemId, Iterator<Map.Entry<String, DataField>> fields) {

@@ -15,7 +15,7 @@ import com.ppm.integration.agilesdk.connector.azuredevops.model.WorkItemType;
 import com.ppm.integration.agilesdk.connector.azuredevops.service.AzureDevopsService;
 import com.ppm.integration.agilesdk.connector.azuredevops.service.AzureDevopsServiceProvider;
 import com.ppm.integration.agilesdk.connector.azuredevops.util.AzureDevOpsUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import com.ppm.integration.agilesdk.connector.azuredevops.util.AgileEntityUtils;
 import com.hp.ppm.common.model.AgileEntityIdProjectDate;
 import com.hp.ppm.integration.model.AgileEntityFieldValue;

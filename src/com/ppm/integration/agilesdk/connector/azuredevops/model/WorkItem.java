@@ -143,7 +143,7 @@ public class WorkItem extends AzureDevopsObject {
     public Date getDateField(String fieldName) {
         String dateStr = getStringField(fieldName);
 
-        if (org.apache.commons.lang.StringUtils.isBlank(dateStr)) {
+        if (org.apache.commons.lang3.StringUtils.isBlank(dateStr)) {
             return null;
         }
 
@@ -220,7 +220,7 @@ public class WorkItem extends AzureDevopsObject {
     private User getResourceIdFromEmailOrUsernameOrFullName(String emailOrUsername, String fullName, UserProvider userProvider, Long projectId) {
         User user = null;
 
-        if (!org.apache.commons.lang.StringUtils.isBlank(emailOrUsername)) {
+        if (!org.apache.commons.lang3.StringUtils.isBlank(emailOrUsername)) {
             user = userProvider.getByEmail(emailOrUsername.trim());
 
             if (user == null) {
@@ -228,7 +228,7 @@ public class WorkItem extends AzureDevopsObject {
             }
         }
 
-        if (user == null && !org.apache.commons.lang.StringUtils.isBlank(fullName)) {
+        if (user == null && !org.apache.commons.lang3.StringUtils.isBlank(fullName)) {
             // This code is complicated and use reflection because we want it to work on older versions of PPM where
             // UserProvider doesn't have the #getByFullName" method, which was introduced in PPM 2023.3
             try {

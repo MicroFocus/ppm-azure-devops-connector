@@ -9,8 +9,8 @@ package com.ppm.integration.agilesdk.connector.azuredevops.rest;
 import com.kintana.core.logging.LogManager;
 import com.kintana.core.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpHost;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.HttpHost;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -23,8 +23,10 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.util.StreamUtils;
 
 
+import java.time.Duration;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.UUID;
 
 /** Unlike the other AgileSDK connectors that use Wink REST Client, Azure DevOps uses Spring HTTP client abstractions because
@@ -65,7 +67,7 @@ public class AzureDevopsRestClient {
             HttpEntity<String> requestEntity = new HttpEntity<String>(jsonPayload, headers);
             ClientHttpRequest request = buildHttpRequest(fullUrl, httpMethod, requestEntity);
             response = request.execute();
-            ResponseEntity<String> responseEntity = ResponseEntity.status(response.getRawStatusCode()).headers(response.getHeaders()).body(readResponseBody(response));
+            ResponseEntity<String> responseEntity = ResponseEntity.status(response.getStatusCode()).headers(response.getHeaders()).body(readResponseBody(response));
 
             // All Azure DevOps REST calls should return HTTP 200 status code if successful.
             checkResponseStatus(200, responseEntity, fullUrl, httpMethod, jsonPayload);
@@ -93,18 +95,18 @@ public class AzureDevopsRestClient {
         HttpComponentsClientHttpRequestFactory factory;
         if (!StringUtils.isBlank(restConfig.getProxyHost())) {
             factory = new HttpComponentsClientHttpRequestFactory(HttpClients.custom()
-                    .setProxy(new HttpHost(restConfig.getProxyHost(), restConfig.getProxyPort(), "http"))
+                    .setProxy(new HttpHost("http", restConfig.getProxyHost(), restConfig.getProxyPort()))
                     .build());
         } else {
             factory = new HttpComponentsClientHttpRequestFactory();
         }
-        factory.setConnectTimeout(60000);
-        factory.setReadTimeout(60000);
+        factory.setConnectTimeout(Duration.ofSeconds(60));
+        factory.setReadTimeout(Duration.ofSeconds(60));
         return factory;
     }
 
     private ClientHttpRequest buildHttpRequest(String fullUrl, String httpMethod, HttpEntity<String> requestEntity) throws java.io.IOException {
-        ClientHttpRequest request = createRequestFactory().createRequest(URI.create(fullUrl), HttpMethod.resolve(httpMethod));
+        ClientHttpRequest request = createRequestFactory().createRequest(URI.create(fullUrl), HttpMethod.valueOf(httpMethod.toUpperCase(Locale.ROOT)));
 
         for (String headerName : requestEntity.getHeaders().keySet()) {
             for (String headerValue : requestEntity.getHeaders().get(headerName)) {
@@ -126,8 +128,8 @@ public class AzureDevopsRestClient {
 
     private void checkResponseStatus(int expectedHttpStatusCode, ResponseEntity<String> response, String uri, String verb, String payload) {
 
-        if (response.getStatusCodeValue() != expectedHttpStatusCode) {
-            StringBuilder errorMessage = new StringBuilder(String.format("## Unexpected HTTP response status code %s for %s uri %s, expected %s", response.getStatusCodeValue(), verb, uri, expectedHttpStatusCode));
+        if (response.getStatusCode().value() != expectedHttpStatusCode) {
+            StringBuilder errorMessage = new StringBuilder(String.format("## Unexpected HTTP response status code %s for %s uri %s, expected %s", response.getStatusCode().value(), verb, uri, expectedHttpStatusCode));
 
             if (payload != null) {
                 errorMessage.append(System.lineSeparator()).append(System.lineSeparator()).append("# Sent Payload:").append(System.lineSeparator()).append(payload);
@@ -137,7 +139,7 @@ public class AzureDevopsRestClient {
                 errorMessage.append(System.lineSeparator()).append(System.lineSeparator()).append("# Received Response:").append(System.lineSeparator()).append(responseStr);
             }
 
-            throw new RestRequestException(response.getStatusCodeValue(), errorMessage.toString());
+            throw new RestRequestException(response.getStatusCode().value(), errorMessage.toString());
         }
     }
 

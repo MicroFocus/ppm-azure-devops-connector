@@ -5,6 +5,8 @@
 
 package com.ppm.integration.agilesdk.connector.azuredevops;
 
+import com.kintana.core.logging.LogManager;
+import com.kintana.core.logging.Logger;
 import com.ppm.integration.agilesdk.ValueSet;
 import com.ppm.integration.agilesdk.connector.azuredevops.model.*;
 import com.ppm.integration.agilesdk.connector.azuredevops.service.AzureDevopsService;
@@ -16,8 +18,7 @@ import com.ppm.integration.agilesdk.provider.Providers;
 import com.ppm.integration.agilesdk.provider.UserProvider;
 import com.ppm.integration.agilesdk.ui.*;
 import com.ppm.integration.agilesdk.ui.Field;
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.function.Function;
@@ -26,7 +27,7 @@ import java.util.stream.Collectors;
 public class AzureDevopsWorkPlanIntegration extends WorkPlanIntegration {
 
 
-    private final Logger logger = Logger.getLogger(AzureDevopsWorkPlanIntegration.class);
+    private final Logger log = LogManager.getLogger(AzureDevopsWorkPlanIntegration.class);
 
     final LocalizationProvider l10n = Providers.getLocalizationProvider(AzureDevopsIntegrationConnector.class);
 

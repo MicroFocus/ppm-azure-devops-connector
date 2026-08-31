@@ -3,6 +3,8 @@ package com.ppm.integration.agilesdk.connector.azuredevops.service;
 import com.google.gson.*;
 import com.hp.ppm.common.model.AgileEntityIdName;
 import com.hp.ppm.common.model.AgileEntityIdProjectDate;
+import com.kintana.core.logging.LogManager;
+import com.kintana.core.logging.Logger;
 import com.ppm.integration.agilesdk.connector.azuredevops.AzureDevopsConstants;
 import com.ppm.integration.agilesdk.connector.azuredevops.model.*;
 import com.ppm.integration.agilesdk.connector.azuredevops.rest.AzureDevopsRestClient;
@@ -10,8 +12,7 @@ import com.ppm.integration.agilesdk.connector.azuredevops.util.WIQLBuilder;
 import com.ppm.integration.agilesdk.dm.DataField;
 import com.ppm.integration.agilesdk.dm.User;
 import com.ppm.integration.agilesdk.provider.UserProvider;
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.apache.commons.lang3.StringUtils;
 
 
 import java.net.URI;
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
  */
 public class AzureDevopsService {
 
-    private final static Logger logger = Logger.getLogger(AzureDevopsService.class);
+    private final Logger log = LogManager.getLogger(AzureDevopsService.class);
     private static final int WORK_ITEMS_BATCH_SIZE = 200;
 
     private AzureDevopsRestClient restClient;
@@ -407,7 +408,7 @@ public class AzureDevopsService {
         try {
             ConnectionData data = responseTo(ConnectionData.class, restClient.sendGet(AzureDevopsConstants.API_CONNECTION_DATA_URL));
         } catch (Exception e) {
-            logger.error("Error when testing connectivity of azure devops connector", e);
+            log.error("Error when testing connectivity of azure devops connector", e);
             return e.getMessage();
         }
         // No error = return null.

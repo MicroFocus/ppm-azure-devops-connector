@@ -11,7 +11,7 @@ import com.ppm.integration.agilesdk.connector.azuredevops.rest.AzureDevopsRestCl
 import com.ppm.integration.agilesdk.connector.azuredevops.rest.AzureDevopsRestConfig;
 import com.ppm.integration.agilesdk.provider.Providers;
 import com.ppm.integration.agilesdk.provider.UserProvider;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class AzureDevopsServiceProvider {
 

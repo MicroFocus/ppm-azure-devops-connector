@@ -9,9 +9,10 @@ package com.ppm.integration.agilesdk.connector.azuredevops.rest;
 import com.kintana.core.logging.LogManager;
 import com.kintana.core.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.HttpHost;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -23,10 +24,10 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.util.StreamUtils;
 
 
-import java.time.Duration;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.UUID;
 
 /** Unlike the other AgileSDK connectors that use Wink REST Client, Azure DevOps uses Spring HTTP client abstractions because
@@ -35,6 +36,7 @@ import java.util.UUID;
 public class AzureDevopsRestClient {
 
     private final static Logger logger = LogManager.getLogger(AzureDevopsRestClient.class);
+    private static final int REQUEST_TIMEOUT_MILLIS = 60_000;
 
     private AzureDevopsRestConfig restConfig;
 
@@ -64,8 +66,7 @@ public class AzureDevopsRestClient {
                         : new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8));
             }
 
-            HttpEntity<String> requestEntity = new HttpEntity<String>(jsonPayload, headers);
-            ClientHttpRequest request = buildHttpRequest(fullUrl, httpMethod, requestEntity);
+            ClientHttpRequest request = buildHttpRequest(fullUrl, httpMethod, headers, jsonPayload);
             response = request.execute();
             ResponseEntity<String> responseEntity = ResponseEntity.status(response.getStatusCode()).headers(response.getHeaders()).body(readResponseBody(response));
 
@@ -92,29 +93,26 @@ public class AzureDevopsRestClient {
     }
 
     private ClientHttpRequestFactory createRequestFactory() {
-        HttpComponentsClientHttpRequestFactory factory;
+        HttpClientBuilder httpClientBuilder = HttpClients.custom()
+                .setDefaultRequestConfig(RequestConfig.custom()
+                        .setConnectTimeout(REQUEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+                        .setResponseTimeout(REQUEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+                        .build());
         if (!StringUtils.isBlank(restConfig.getProxyHost())) {
-            factory = new HttpComponentsClientHttpRequestFactory(HttpClients.custom()
-                    .setProxy(new HttpHost("http", restConfig.getProxyHost(), restConfig.getProxyPort()))
-                    .build());
-        } else {
-            factory = new HttpComponentsClientHttpRequestFactory();
+            httpClientBuilder.setProxy(new HttpHost("http", restConfig.getProxyHost(), restConfig.getProxyPort()));
         }
-        factory.setConnectTimeout(Duration.ofSeconds(60));
-        factory.setReadTimeout(Duration.ofSeconds(60));
-        return factory;
+        return  new HttpComponentsClientHttpRequestFactory(httpClientBuilder.build());
     }
 
-    private ClientHttpRequest buildHttpRequest(String fullUrl, String httpMethod, HttpEntity<String> requestEntity) throws java.io.IOException {
+    private ClientHttpRequest buildHttpRequest(String fullUrl, String httpMethod, HttpHeaders headers, String body) throws java.io.IOException {
         ClientHttpRequest request = createRequestFactory().createRequest(URI.create(fullUrl), HttpMethod.valueOf(httpMethod.toUpperCase(Locale.ROOT)));
 
-        for (String headerName : requestEntity.getHeaders().keySet()) {
-            for (String headerValue : requestEntity.getHeaders().get(headerName)) {
+        for (String headerName : headers.headerNames()) {
+            for (String headerValue : headers.getValuesAsList(headerName)) {
                 request.getHeaders().add(headerName, headerValue);
             }
         }
 
-        String body = requestEntity.getBody();
         if (body != null) {
             StreamUtils.copy(body, StandardCharsets.UTF_8, request.getBody());
         }
